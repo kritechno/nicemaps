@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "nicemaps",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--port", "3007"],
+      "port": 3007,
+      "env": { "NEXT_DIST_DIR": ".next-preview" }
+    }
+  ]
+}
