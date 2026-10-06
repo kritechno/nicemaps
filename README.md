@@ -1,7 +1,5 @@
 # NiceMaps
 
-[![CI](https://github.com/kritechno/nicemaps/actions/workflows/ci.yml/badge.svg)](https://github.com/kritechno/nicemaps/actions/workflows/ci.yml)
-
 A quiet map studio for adventurers, tour agencies, and route planners who need
 polished, export-ready route maps for websites, presentations, itineraries, and
 client-facing trip material.
