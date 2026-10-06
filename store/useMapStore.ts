@@ -12,13 +12,7 @@ export type MapStyleKey =
   | "editorial-alpine"
   | "minimal-brochure"
   | "dark-expedition"
-  | "neon-nights"
   | "satellite-explorer"
-  | "bright"
-  | "camouflage"
-  | "swiss-ski"
-  | "vintage"
-  | "whaam"
   | "klokantech-basic"
   | "dark-matter"
   | "fiord-color"
@@ -184,67 +178,6 @@ export const MAP_STYLE_DEFINITIONS: Record<MapStyleKey, MapStyleDefinition> = {
     supportsStaticApi: true,
     attribution: "Mapbox / OpenStreetMap",
     tone: "bg-[#4A6B3A]"
-  },
-  "neon-nights": {
-    key: "neon-nights",
-    label: "Neon Nights",
-    url: "/styles/neon.json",
-    provider: "third-party",
-    requiresMapboxToken: true,
-    supportsStaticApi: false,
-    attribution: "Mapbox / OpenStreetMap",
-    tone: "bg-[#19D3DA]",
-    knownWarnings: ["External sprite icons may be missing until the style is fully ported."]
-  },
-  bright: {
-    key: "bright",
-    label: "Daylight Atlas",
-    url: "/styles/bright.json",
-    provider: "mapbox",
-    requiresMapboxToken: true,
-    supportsStaticApi: false,
-    attribution: "Mapbox / OpenStreetMap",
-    tone: "bg-[#F2D7A0]"
-  },
-  camouflage: {
-    key: "camouflage",
-    label: "Field Olive",
-    url: "/styles/camouflage.json",
-    provider: "third-party",
-    requiresMapboxToken: true,
-    supportsStaticApi: false,
-    attribution: "Mapbox / OpenStreetMap",
-    tone: "bg-[#6B6F4A]"
-  },
-  "swiss-ski": {
-    key: "swiss-ski",
-    label: "Alpine Powder",
-    url: "/styles/swiss-ski.json",
-    provider: "third-party",
-    requiresMapboxToken: true,
-    supportsStaticApi: false,
-    attribution: "Mapbox / OpenStreetMap",
-    tone: "bg-[#BFD8E6]"
-  },
-  vintage: {
-    key: "vintage",
-    label: "Heritage Press",
-    url: "/styles/vintage.json",
-    provider: "third-party",
-    requiresMapboxToken: true,
-    supportsStaticApi: false,
-    attribution: "Mapbox / OpenStreetMap",
-    tone: "bg-[#C7A87A]"
-  },
-  whaam: {
-    key: "whaam",
-    label: "Comic Pop",
-    url: "/styles/whaam.json",
-    provider: "third-party",
-    requiresMapboxToken: true,
-    supportsStaticApi: false,
-    attribution: "Mapbox / OpenStreetMap",
-    tone: "bg-[#E8413A]"
   },
   "klokantech-basic": {
     key: "klokantech-basic",
