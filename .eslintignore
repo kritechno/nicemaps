@@ -1,0 +1,6 @@
+.next
+.next-preview
+coverage
+dist
+node_modules
+out

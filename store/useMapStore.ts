@@ -11,10 +11,24 @@ export type Waypoint = {
 export type MapStyleKey =
   | "editorial-alpine"
   | "minimal-brochure"
-  | "luxury-travel"
   | "dark-expedition"
-  | "topographic-poster"
-  | "agency-clean";
+  | "neon-nights"
+  | "satellite-explorer"
+  | "bright"
+  | "camouflage"
+  | "swiss-ski"
+  | "vintage"
+  | "whaam"
+  | "klokantech-basic"
+  | "dark-matter"
+  | "fiord-color"
+  | "klokantech-3d"
+  | "klokantech-terrain"
+  | "osm-bright"
+  | "osm-liberty"
+  | "positron"
+  | "toner";
+export type MapStyleProvider = "mapbox" | "openfreemap" | "third-party";
 export type RoutePaletteKey = "orange" | "olive" | "sand" | "mono";
 export type ExportPresetKey =
   | "presentation"
@@ -93,6 +107,7 @@ export type ManualRoute = {
   mode: "unpaved";
   coordinates: [number, number][];
   endpointWaypointIds: [string, string];
+  generatedEndpointWaypointIds?: string[];
 };
 
 export type WaypointGroup = {
@@ -117,13 +132,229 @@ export type SavedRoute = {
   updatedAt: string;
 };
 
-export const MAP_STYLES: Record<MapStyleKey, string> = {
-  "editorial-alpine": "mapbox://styles/mapbox/outdoors-v12",
-  "minimal-brochure": "mapbox://styles/mapbox/light-v11",
-  "luxury-travel": "mapbox://styles/mapbox/streets-v12",
-  "dark-expedition": "mapbox://styles/mapbox/dark-v11",
-  "topographic-poster": "mapbox://styles/mapbox/outdoors-v12",
-  "agency-clean": "mapbox://styles/mapbox/light-v11"
+export type MapStyleDefinition = {
+  key: MapStyleKey;
+  label: string;
+  url: string;
+  provider: MapStyleProvider;
+  requiresMapboxToken: boolean;
+  supportsStaticApi: boolean;
+  attribution: string;
+  tone: string;
+  knownWarnings?: string[];
+};
+
+export const MAP_STYLE_DEFINITIONS: Record<MapStyleKey, MapStyleDefinition> = {
+  "editorial-alpine": {
+    key: "editorial-alpine",
+    label: "Editorial Alpine",
+    url: "mapbox://styles/mapbox/outdoors-v12",
+    provider: "mapbox",
+    requiresMapboxToken: true,
+    supportsStaticApi: true,
+    attribution: "Mapbox / OpenStreetMap",
+    tone: "bg-[#DC6432]"
+  },
+  "minimal-brochure": {
+    key: "minimal-brochure",
+    label: "Minimal Brochure",
+    url: "mapbox://styles/mapbox/light-v11",
+    provider: "mapbox",
+    requiresMapboxToken: true,
+    supportsStaticApi: true,
+    attribution: "Mapbox / OpenStreetMap",
+    tone: "bg-[#EEE0B6]"
+  },
+  "dark-expedition": {
+    key: "dark-expedition",
+    label: "Dark Expedition",
+    url: "mapbox://styles/mapbox/dark-v11",
+    provider: "mapbox",
+    requiresMapboxToken: true,
+    supportsStaticApi: true,
+    attribution: "Mapbox / OpenStreetMap",
+    tone: "bg-[#171B18]"
+  },
+  "satellite-explorer": {
+    key: "satellite-explorer",
+    label: "Satellite Explorer",
+    url: "mapbox://styles/mapbox/satellite-streets-v12",
+    provider: "mapbox",
+    requiresMapboxToken: true,
+    supportsStaticApi: true,
+    attribution: "Mapbox / OpenStreetMap",
+    tone: "bg-[#4A6B3A]"
+  },
+  "neon-nights": {
+    key: "neon-nights",
+    label: "Neon Nights",
+    url: "/styles/neon.json",
+    provider: "third-party",
+    requiresMapboxToken: true,
+    supportsStaticApi: false,
+    attribution: "Mapbox / OpenStreetMap",
+    tone: "bg-[#19D3DA]",
+    knownWarnings: ["External sprite icons may be missing until the style is fully ported."]
+  },
+  bright: {
+    key: "bright",
+    label: "Daylight Atlas",
+    url: "/styles/bright.json",
+    provider: "mapbox",
+    requiresMapboxToken: true,
+    supportsStaticApi: false,
+    attribution: "Mapbox / OpenStreetMap",
+    tone: "bg-[#F2D7A0]"
+  },
+  camouflage: {
+    key: "camouflage",
+    label: "Field Olive",
+    url: "/styles/camouflage.json",
+    provider: "third-party",
+    requiresMapboxToken: true,
+    supportsStaticApi: false,
+    attribution: "Mapbox / OpenStreetMap",
+    tone: "bg-[#6B6F4A]"
+  },
+  "swiss-ski": {
+    key: "swiss-ski",
+    label: "Alpine Powder",
+    url: "/styles/swiss-ski.json",
+    provider: "third-party",
+    requiresMapboxToken: true,
+    supportsStaticApi: false,
+    attribution: "Mapbox / OpenStreetMap",
+    tone: "bg-[#BFD8E6]"
+  },
+  vintage: {
+    key: "vintage",
+    label: "Heritage Press",
+    url: "/styles/vintage.json",
+    provider: "third-party",
+    requiresMapboxToken: true,
+    supportsStaticApi: false,
+    attribution: "Mapbox / OpenStreetMap",
+    tone: "bg-[#C7A87A]"
+  },
+  whaam: {
+    key: "whaam",
+    label: "Comic Pop",
+    url: "/styles/whaam.json",
+    provider: "third-party",
+    requiresMapboxToken: true,
+    supportsStaticApi: false,
+    attribution: "Mapbox / OpenStreetMap",
+    tone: "bg-[#E8413A]"
+  },
+  "klokantech-basic": {
+    key: "klokantech-basic",
+    label: "Studio Neutral",
+    url: "/styles/klokantech-basic.json",
+    provider: "openfreemap",
+    requiresMapboxToken: false,
+    supportsStaticApi: false,
+    attribution: "OpenFreeMap / OpenMapTiles / OpenStreetMap",
+    tone: "bg-[#E4E0D8]"
+  },
+  "dark-matter": {
+    key: "dark-matter",
+    label: "Midnight Atlas",
+    url: "/styles/dark-matter.json",
+    provider: "openfreemap",
+    requiresMapboxToken: false,
+    supportsStaticApi: false,
+    attribution: "OpenFreeMap / OpenMapTiles / OpenStreetMap",
+    tone: "bg-[#0F1620]"
+  },
+  "fiord-color": {
+    key: "fiord-color",
+    label: "Nordic Fjord",
+    url: "/styles/fiord-color.json",
+    provider: "openfreemap",
+    requiresMapboxToken: false,
+    supportsStaticApi: false,
+    attribution: "OpenFreeMap / OpenMapTiles / OpenStreetMap",
+    tone: "bg-[#2E3B4E]"
+  },
+  "klokantech-3d": {
+    key: "klokantech-3d",
+    label: "Skyline 3D",
+    url: "/styles/klokantech-3d.json",
+    provider: "openfreemap",
+    requiresMapboxToken: false,
+    supportsStaticApi: false,
+    attribution: "OpenFreeMap / OpenMapTiles / OpenStreetMap",
+    tone: "bg-[#D8D4C8]"
+  },
+  "klokantech-terrain": {
+    key: "klokantech-terrain",
+    label: "Backcountry Relief",
+    url: "/styles/klokantech-terrain.json",
+    provider: "openfreemap",
+    requiresMapboxToken: false,
+    supportsStaticApi: false,
+    attribution: "OpenFreeMap / OpenMapTiles / OpenStreetMap",
+    tone: "bg-[#A9B98C]"
+  },
+  "osm-bright": {
+    key: "osm-bright",
+    label: "Wayfarer Bright",
+    url: "/styles/osm-bright.json",
+    provider: "openfreemap",
+    requiresMapboxToken: false,
+    supportsStaticApi: false,
+    attribution: "OpenFreeMap / OpenMapTiles / OpenStreetMap",
+    tone: "bg-[#F0E6C8]"
+  },
+  "osm-liberty": {
+    key: "osm-liberty",
+    label: "Open Road",
+    url: "/styles/osm-liberty.json",
+    provider: "openfreemap",
+    requiresMapboxToken: false,
+    supportsStaticApi: false,
+    attribution: "OpenFreeMap / OpenMapTiles / OpenStreetMap",
+    tone: "bg-[#D9CFC0]"
+  },
+  positron: {
+    key: "positron",
+    label: "Paper Light",
+    url: "/styles/positron.json",
+    provider: "openfreemap",
+    requiresMapboxToken: false,
+    supportsStaticApi: false,
+    attribution: "OpenFreeMap / OpenMapTiles / OpenStreetMap",
+    tone: "bg-[#F3F3F1]"
+  },
+  toner: {
+    key: "toner",
+    label: "Ink & Paper",
+    url: "/styles/toner.json",
+    provider: "openfreemap",
+    requiresMapboxToken: false,
+    supportsStaticApi: false,
+    attribution: "OpenFreeMap / OpenMapTiles / OpenStreetMap",
+    tone: "bg-[#1A1A1A]"
+  }
+};
+
+export const MAP_STYLES = Object.fromEntries(
+  Object.entries(MAP_STYLE_DEFINITIONS).map(([key, definition]) => [key, definition.url])
+) as Record<MapStyleKey, string>;
+
+const isRoutePaletteKey = (value: unknown): value is RoutePaletteKey =>
+  value === "orange" || value === "olive" || value === "sand" || value === "mono";
+
+const isMapStyleValue = (value: unknown): value is string =>
+  typeof value === "string" && Object.values(MAP_STYLES).includes(value);
+
+export const getGeneratedEndpointIds = (route: ManualRoute | undefined): string[] => {
+  if (!route) return [];
+  if (route.generatedEndpointWaypointIds) return route.generatedEndpointWaypointIds;
+
+  return route.endpointWaypointIds.filter(
+    (id) => id === `${route.id}-start` || id === `${route.id}-end`
+  );
 };
 
 const SAVED_ROUTES_KEY = "nicemaps.savedRoutes";
@@ -155,6 +386,51 @@ export const defaultExportSettings: ExportSettings = {
   showElevationProfile: false,
   hiddenWaypointIds: [],
   chromeMode: "framed"
+};
+
+const isRouteDerivedExportTitle = (title: string, routeName: string) => {
+  const normalizedTitle = title.trim();
+  const normalizedRouteName = getRouteName(routeName);
+
+  return (
+    normalizedTitle === "" ||
+    normalizedTitle === defaultExportSettings.title ||
+    normalizedTitle === normalizedRouteName
+  );
+};
+
+const syncRouteDerivedExportTitle = (
+  exportSettings: ExportSettings,
+  nextRouteName: string,
+  previousRouteName: string
+): ExportSettings => {
+  if (!isRouteDerivedExportTitle(exportSettings.title, previousRouteName)) {
+    return exportSettings;
+  }
+
+  return {
+    ...exportSettings,
+    title: getRouteName(nextRouteName)
+  };
+};
+
+const mergeSavedExportSettings = (
+  routeName: string,
+  exportSettings?: ExportSettings
+): ExportSettings => {
+  const merged = {
+    ...defaultExportSettings,
+    ...(exportSettings ?? {})
+  };
+
+  if (!exportSettings || isRouteDerivedExportTitle(merged.title, routeName)) {
+    return {
+      ...merged,
+      title: routeName
+    };
+  }
+
+  return merged;
 };
 
 type MapStore = {
@@ -215,15 +491,208 @@ const groupColors = ["#DC6432", "#645A32", "#3F7652", "#D96758", "#596247"];
 
 const getRouteName = (name: string) => name.trim() || "Untitled route";
 
-const canUseStorage = () => typeof window !== "undefined" && Boolean(window.localStorage);
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isCoordinate = (value: unknown): value is [number, number] =>
+  Array.isArray(value) &&
+  value.length === 2 &&
+  typeof value[0] === "number" &&
+  typeof value[1] === "number" &&
+  Number.isFinite(value[0]) &&
+  Number.isFinite(value[1]) &&
+  value[0] >= -180 &&
+  value[0] <= 180 &&
+  value[1] >= -90 &&
+  value[1] <= 90;
+
+const isMapStyleKey = (value: unknown): value is MapStyleKey =>
+  typeof value === "string" && value in MAP_STYLES;
+
+const sanitizeWaypoint = (value: unknown): Waypoint | null => {
+  if (!isRecord(value) || typeof value.id !== "string" || typeof value.name !== "string") {
+    return null;
+  }
+
+  if (typeof value.groupId !== "string" || !isCoordinate(value.coordinates)) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    name: value.name,
+    coordinates: value.coordinates,
+    groupId: value.groupId
+  };
+};
+
+const sanitizeWaypointGroup = (value: unknown): WaypointGroup | null => {
+  if (
+    !isRecord(value) ||
+    typeof value.id !== "string" ||
+    typeof value.name !== "string" ||
+    typeof value.color !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    name: value.name,
+    color: value.color
+  };
+};
+
+const sanitizeManualRoute = (value: unknown): ManualRoute | null => {
+  if (
+    !isRecord(value) ||
+    typeof value.id !== "string" ||
+    typeof value.name !== "string" ||
+    typeof value.groupId !== "string" ||
+    value.mode !== "unpaved" ||
+    !Array.isArray(value.coordinates) ||
+    !Array.isArray(value.endpointWaypointIds) ||
+    value.endpointWaypointIds.length !== 2 ||
+    typeof value.endpointWaypointIds[0] !== "string" ||
+    typeof value.endpointWaypointIds[1] !== "string"
+  ) {
+    return null;
+  }
+
+  const coordinates = value.coordinates.filter(isCoordinate);
+
+  if (coordinates.length < 2) {
+    return null;
+  }
+
+  const generatedEndpointWaypointIds = Array.isArray(value.generatedEndpointWaypointIds)
+    ? value.generatedEndpointWaypointIds.filter((id): id is string => typeof id === "string")
+    : undefined;
+
+  return {
+    id: value.id,
+    name: value.name,
+    groupId: value.groupId,
+    mode: "unpaved",
+    coordinates,
+    endpointWaypointIds: [value.endpointWaypointIds[0], value.endpointWaypointIds[1]],
+    ...(generatedEndpointWaypointIds ? { generatedEndpointWaypointIds } : {})
+  };
+};
+
+const sanitizeExportSettings = (value: unknown, routeName: string): ExportSettings => {
+  if (!isRecord(value)) {
+    return { ...defaultExportSettings, title: routeName };
+  }
+
+  return {
+    ...defaultExportSettings,
+    title: routeName,
+    ...value,
+    legendHiddenGroupIds: Array.isArray(value.legendHiddenGroupIds)
+      ? value.legendHiddenGroupIds.filter((id): id is string => typeof id === "string")
+      : [],
+    legendLabelOverrides: isRecord(value.legendLabelOverrides)
+      ? Object.fromEntries(
+          Object.entries(value.legendLabelOverrides).filter(
+            ([, label]) => typeof label === "string"
+          )
+        )
+      : {},
+    hiddenWaypointIds: Array.isArray(value.hiddenWaypointIds)
+      ? value.hiddenWaypointIds.filter((id): id is string => typeof id === "string")
+      : []
+  } as ExportSettings;
+};
+
+const sanitizeMetadata = (value: unknown): RouteMetadata => {
+  if (!isRecord(value)) {
+    return { ...defaultRouteMetadata };
+  }
+
+  return {
+    destination: typeof value.destination === "string" ? value.destination : "",
+    durationDays: typeof value.durationDays === "number" ? value.durationDays : null,
+    difficulty:
+      value.difficulty === "easy" ||
+      value.difficulty === "moderate" ||
+      value.difficulty === "challenging" ||
+      value.difficulty === "expert"
+        ? value.difficulty
+        : "",
+    season: typeof value.season === "string" ? value.season : "",
+    departureMonths: Array.isArray(value.departureMonths)
+      ? value.departureMonths.filter((month): month is string => typeof month === "string")
+      : [],
+    audience: typeof value.audience === "string" ? value.audience : ""
+  };
+};
+
+const sanitizeSavedRoute = (value: unknown): SavedRoute | null => {
+  if (!isRecord(value) || typeof value.id !== "string") {
+    return null;
+  }
+
+  const name = typeof value.name === "string" ? getRouteName(value.name) : "Untitled route";
+  const waypoints = Array.isArray(value.waypoints)
+    ? value.waypoints.map(sanitizeWaypoint).filter((waypoint): waypoint is Waypoint => waypoint !== null)
+    : [];
+  const waypointGroups = Array.isArray(value.waypointGroups)
+    ? value.waypointGroups
+        .map(sanitizeWaypointGroup)
+        .filter((group): group is WaypointGroup => group !== null)
+    : [];
+  const manualRoutes = Array.isArray(value.manualRoutes)
+    ? value.manualRoutes
+        .map(sanitizeManualRoute)
+        .filter((route): route is ManualRoute => route !== null)
+    : [];
+  const mapStyleKey = isMapStyleKey(value.mapStyleKey)
+    ? value.mapStyleKey
+    : (Object.entries(MAP_STYLES).find(([, style]) => style === value.mapStyle)?.[0] as
+        | MapStyleKey
+        | undefined);
+  const mapStyle = isMapStyleValue(value.mapStyle)
+    ? value.mapStyle
+    : MAP_STYLES[mapStyleKey ?? "editorial-alpine"];
+
+  return {
+    id: value.id,
+    name,
+    waypoints,
+    waypointGroups,
+    manualRoutes,
+    mapStyle,
+    mapStyleKey: mapStyleKey ?? "editorial-alpine",
+    routePalette: isRoutePaletteKey(value.routePalette) ? value.routePalette : "orange",
+    exportSettings: sanitizeExportSettings(value.exportSettings, name),
+    metadata: sanitizeMetadata(value.metadata),
+    groupVocabulary: value.groupVocabulary === "stage" ? "stage" : "day",
+    createdAt: typeof value.createdAt === "string" ? value.createdAt : new Date().toISOString(),
+    updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : new Date().toISOString()
+  };
+};
+
+const getStorage = () => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+};
 
 const readSavedRoutes = (): SavedRoute[] => {
-  if (!canUseStorage()) {
+  const storage = getStorage();
+  if (!storage) {
     return [];
   }
 
   try {
-    const rawRoutes = window.localStorage.getItem(SAVED_ROUTES_KEY);
+    const rawRoutes = storage.getItem(SAVED_ROUTES_KEY);
 
     if (!rawRoutes) {
       return [];
@@ -231,18 +700,27 @@ const readSavedRoutes = (): SavedRoute[] => {
 
     const parsedRoutes = JSON.parse(rawRoutes);
 
-    return Array.isArray(parsedRoutes) ? parsedRoutes : [];
+    return Array.isArray(parsedRoutes)
+      ? parsedRoutes
+          .map(sanitizeSavedRoute)
+          .filter((route): route is SavedRoute => route !== null)
+      : [];
   } catch {
     return [];
   }
 };
 
 const writeSavedRoutes = (routes: SavedRoute[]) => {
-  if (!canUseStorage()) {
+  const storage = getStorage();
+  if (!storage) {
     return;
   }
 
-  window.localStorage.setItem(SAVED_ROUTES_KEY, JSON.stringify(routes));
+  try {
+    storage.setItem(SAVED_ROUTES_KEY, JSON.stringify(routes));
+  } catch {
+    // localStorage can be unavailable, blocked, or over quota; keep in-memory state.
+  }
 };
 
 const createWaypointGroup = (
@@ -326,7 +804,15 @@ export const useMapStore = create<MapStore>((set) => ({
       };
     }),
   hydrateSavedRoutes: () => set({ savedRoutes: readSavedRoutes() }),
-  setRouteName: (name) => set({ routeName: name }),
+  setRouteName: (name) =>
+    set((state) => ({
+      routeName: name,
+      exportSettings: syncRouteDerivedExportTitle(
+        state.exportSettings,
+        name,
+        state.routeName
+      )
+    })),
   saveCurrentRoute: () => {
     let savedRoute: SavedRoute | null = null;
 
@@ -406,11 +892,7 @@ export const useMapStore = create<MapStore>((set) => ({
         manualRoutes: savedRoute.manualRoutes,
         mapStyle: savedRoute.mapStyle,
         routePalette: savedRoute.routePalette,
-        exportSettings: {
-          ...defaultExportSettings,
-          title: savedRoute.name,
-          ...(savedRoute.exportSettings ?? {})
-        },
+        exportSettings: mergeSavedExportSettings(savedRoute.name, savedRoute.exportSettings),
         metadata: { ...defaultRouteMetadata, ...(savedRoute.metadata ?? {}) },
         groupVocabulary: savedRoute.groupVocabulary ?? "day",
         routeMetricsByGroup: {},
@@ -619,21 +1101,21 @@ export const useMapStore = create<MapStore>((set) => ({
   removeManualRoute: (routeId) =>
     set((state) => {
       const route = state.manualRoutes.find((item) => item.id === routeId);
-      const endpointIds: string[] = route ? [...route.endpointWaypointIds] : [];
+      const endpointIds = getGeneratedEndpointIds(route);
 
       return {
         manualRoutes: state.manualRoutes.filter((item) => item.id !== routeId),
         waypoints: state.waypoints.filter((waypoint) => !endpointIds.includes(waypoint.id))
       };
     }),
-  clearManualRoutesForGroup: (groupId) =>
-    set((state) => ({
-      manualRoutes: state.manualRoutes.filter((route) => route.groupId !== groupId),
-      waypoints: state.waypoints.filter(
-        (waypoint) =>
-          !state.manualRoutes
-            .filter((route) => route.groupId === groupId)
-            .some((route) => route.endpointWaypointIds.includes(waypoint.id))
-      )
-    }))
+	  clearManualRoutesForGroup: (groupId) =>
+	    set((state) => ({
+	      manualRoutes: state.manualRoutes.filter((route) => route.groupId !== groupId),
+	      waypoints: state.waypoints.filter(
+	        (waypoint) =>
+	          !state.manualRoutes
+	            .filter((route) => route.groupId === groupId)
+	            .some((route) => getGeneratedEndpointIds(route).includes(waypoint.id))
+	      )
+	    }))
 }));

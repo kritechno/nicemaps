@@ -30,26 +30,15 @@ import {
 import { ExportStudio } from "@/components/ExportStudio";
 import logoSrc from "@/images/logo-transparent.png";
 import {
+  MAP_STYLE_DEFINITIONS,
   MAP_STYLES,
   type MapTool,
-  type MapStyleKey,
   type Waypoint,
   type WaypointGroup,
   useMapStore
 } from "@/store/useMapStore";
 
-const styleOptions: Array<{
-  key: MapStyleKey;
-  label: string;
-  tone: string;
-}> = [
-  { key: "editorial-alpine", label: "Editorial Alpine", tone: "bg-[#DC6432]" },
-  { key: "minimal-brochure", label: "Minimal Brochure", tone: "bg-[#EEE0B6]" },
-  { key: "luxury-travel", label: "Luxury Travel", tone: "bg-[#645A32]" },
-  { key: "dark-expedition", label: "Dark Expedition", tone: "bg-[#171B18]" },
-  { key: "topographic-poster", label: "Topo Poster", tone: "bg-[#3F7652]" },
-  { key: "agency-clean", label: "Agency Clean", tone: "bg-[#D96758]" }
-];
+const styleOptions = Object.values(MAP_STYLE_DEFINITIONS);
 
 const toolOptions: Array<{
   key: MapTool;
@@ -638,6 +627,7 @@ export function Sidebar() {
             <button
               type="button"
               onClick={() => setIsExportOpen(true)}
+              aria-label="Export map"
               className="flex h-11 items-center justify-center gap-2 rounded-[8px] bg-rust px-3 text-sm font-bold text-white transition hover:bg-brassLight active:translate-y-px focus:outline-none focus:ring-2 focus:ring-rust/35 sm:px-5"
             >
               <Download size={17} strokeWidth={1.9} />

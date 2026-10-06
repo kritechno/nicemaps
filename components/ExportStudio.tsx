@@ -20,6 +20,7 @@ import {
   type CornerPosition,
   type ExportPresetKey,
   type ExportSettings,
+  MAP_STYLE_DEFINITIONS,
   MAP_STYLES,
   type ManualRoute,
   type NorthArrowStyle,
@@ -222,9 +223,13 @@ const getGroupColor = (groups: WaypointGroup[], groupId: string, fallback: strin
   groups.find((group) => group.id === groupId)?.color ?? fallback;
 
 const getStaticMapStylePath = (mapStyle: string) => {
-  const normalizedStyle = Object.values(MAP_STYLES).includes(mapStyle)
-    ? mapStyle
-    : MAP_STYLES["editorial-alpine"];
+  // The Mapbox Static Images API only accepts hosted `mapbox://styles/...`
+  // styles. Local GL style JSONs (e.g. the ported Neon style) fall back to
+  // the default editorial style for the static-image render path.
+  const normalizedStyle =
+    Object.values(MAP_STYLES).includes(mapStyle) && mapStyle.startsWith("mapbox://styles/")
+      ? mapStyle
+      : MAP_STYLES["editorial-alpine"];
 
   return normalizedStyle.replace("mapbox://styles/", "");
 };
@@ -411,7 +416,7 @@ function ScaleBar({
   );
 }
 
-function AttributionBadge({ style }: { style: "light" | "dark" }) {
+function AttributionBadge({ style, attribution }: { style: "light" | "dark"; attribution: string }) {
   const isLight = style === "light";
   return (
     <div
@@ -419,7 +424,7 @@ function AttributionBadge({ style }: { style: "light" | "dark" }) {
         isLight ? "bg-[#F8F3E6]/70 text-ink" : "bg-ink/70 text-paper"
       }`}
     >
-      © Mapbox · OSM
+      {attribution}
     </div>
   );
 }
@@ -725,15 +730,30 @@ function ExportMapArtwork({
       mapInstance?.remove();
     };
   }, [
-    paddedBounds?.minLng,
-    paddedBounds?.minLat,
-    paddedBounds?.maxLng,
-    paddedBounds?.maxLat,
+    paddedBounds,
     mapStyle,
     showMapLabels,
     mapSectionSize.width,
     mapSectionSize.height
   ]);
+
+  useEffect(() => {
+    if (paddedBounds) return;
+
+    const canvas = visibleBasemapCanvasRef.current;
+    if (!canvas || mapSectionSize.width < 2 || mapSectionSize.height < 2) return;
+
+    const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    const width = Math.round(mapSectionSize.width * dpr);
+    const height = Math.round(mapSectionSize.height * dpr);
+
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+
+    canvas.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
+  }, [mapSectionSize.height, mapSectionSize.width, paddedBounds]);
 
   // Returns coordinates in [0, 100] x [0, 100] — used as CSS percentages for
   // DOM-positioned markers/labels. Routes are not projected through this
@@ -880,6 +900,9 @@ function ExportMapArtwork({
   const subtitle = settings.subtitle.trim();
   const showDetailedLabels = settings.showLabels && settings.labelDensity !== "clean";
   const mapOnly = settings.chromeMode === "map-only";
+  const styleAttribution =
+    Object.values(MAP_STYLE_DEFINITIONS).find((definition) => definition.url === mapStyle)
+      ?.attribution ?? "Mapbox / OpenStreetMap";
   const hiddenWaypointIds = new Set(settings.hiddenWaypointIds);
 
   return (
@@ -1057,7 +1080,7 @@ function ExportMapArtwork({
           ) : null}
 
           <div className={`absolute ${cornerStyles[settings.attributionPosition]}`}>
-            <AttributionBadge style={settings.attributionStyle} />
+            <AttributionBadge style={settings.attributionStyle} attribution={styleAttribution} />
           </div>
         </section>
 
@@ -1132,10 +1155,61 @@ export function ExportStudio({
     showMapLabels
   } = useMapStore();
   const artboardRef = useRef<HTMLDivElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
   const [exportStatus, setExportStatus] = useState<"idle" | "rendering" | "copied" | "error">("idle");
   const [isMetadataOpen, setIsMetadataOpen] = useState(false);
   const preset = getPreset(exportSettings);
   const artboardScale = Math.min(1, 760 / preset.width, 520 / preset.height);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const getFocusableElements = () =>
+      Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), textarea, input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        ) ?? []
+      ).filter((element) => !element.hasAttribute("disabled") && element.offsetParent !== null);
+
+    const focusableElements = getFocusableElements();
+    focusableElements[0]?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const elements = getFocusableElements();
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+
+      if (!first || !last) {
+        return;
+      }
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      previousFocus?.focus();
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) {
     return null;
@@ -1210,7 +1284,7 @@ export function ExportStudio({
 
     try {
       const dataUrl = await renderPngDataUrl();
-      const printWindow = window.open("", "_blank", "noopener,noreferrer");
+      const printWindow = window.open("", "_blank");
 
       if (!printWindow) {
         throw new Error("Unable to open print window.");
@@ -1258,6 +1332,21 @@ export function ExportStudio({
         const serializer = new XMLSerializer();
         const cloned = node.cloneNode(true) as HTMLElement;
         cloned.style.transform = "none";
+        const originalCanvases = Array.from(node.querySelectorAll("canvas"));
+        const clonedCanvases = Array.from(cloned.querySelectorAll("canvas"));
+
+        clonedCanvases.forEach((canvas, index) => {
+          const originalCanvas = originalCanvases[index];
+          if (!originalCanvas) return;
+
+          const image = document.createElement("img");
+          image.setAttribute("src", originalCanvas.toDataURL("image/png"));
+          image.setAttribute("alt", "");
+          image.setAttribute("aria-hidden", "true");
+          image.setAttribute("class", canvas.getAttribute("class") ?? "");
+          image.setAttribute("style", canvas.getAttribute("style") ?? "display:block;");
+          canvas.replaceWith(image);
+        });
         const html = serializer.serializeToString(cloned);
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;">${html}</div></foreignObject></svg>`;
         const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
@@ -1322,6 +1411,7 @@ export function ExportStudio({
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-20 grid grid-cols-1 bg-field/55 p-3 text-ink backdrop-blur-2xl backdrop-saturate-150 lg:grid-cols-[420px_1fr]"
       role="dialog"
       aria-modal="true"

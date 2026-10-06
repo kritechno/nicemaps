@@ -8,6 +8,7 @@ import { ensureMapboxRtlPlugin } from "./mapboxRtl";
 import type { Feature, FeatureCollection, GeoJsonProperties, Geometry, LineString } from "geojson";
 import Pbf from "pbf";
 import {
+  getGeneratedEndpointIds,
   type ManualRoute,
   type RouteMetrics,
   type Waypoint,
@@ -865,6 +866,7 @@ export function MapArea() {
         mode: "unpaved",
         coordinates: draftUnpavedCoordinates,
         endpointWaypointIds: [startWaypointId, endWaypointId],
+        generatedEndpointWaypointIds: [startWaypointId, endWaypointId],
         groupId: selectedAddGroupId
       });
     }
@@ -1189,17 +1191,19 @@ export function FallbackMapPreview({
       return points;
     }, {});
   }, [waypoints]);
+  const generatedEndpointIds = useMemo(
+    () => new Set(manualRoutes.flatMap((route) => getGeneratedEndpointIds(route))),
+    [manualRoutes]
+  );
   const groupedWaypoints = useMemo(
     () =>
       groups.map((group) => ({
         group,
         waypoints: waypoints.filter(
-          (waypoint) =>
-            waypoint.groupId === group.id &&
-            !manualRoutes.some((route) => route.endpointWaypointIds.includes(waypoint.id))
+          (waypoint) => waypoint.groupId === group.id && !generatedEndpointIds.has(waypoint.id)
         )
       })),
-    [groups, manualRoutes, waypoints]
+    [generatedEndpointIds, groups, waypoints]
   );
   const groupColorById = useMemo(
     () =>

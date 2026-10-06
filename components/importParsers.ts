@@ -24,6 +24,18 @@ const parseXml = (text: string): Document => {
   return doc;
 };
 
+const parseCoordinateText = (text: string): [number, number][] =>
+  text
+    .split(/\s+/)
+    .map((triple) => triple.split(",").map(Number))
+    .filter((coord) => isFiniteCoord(coord[0], coord[1]))
+    .map((coord) => [coord[0]!, coord[1]!] as [number, number]);
+
+const appendLine = (target: [number, number][], coordinates: [number, number][]) => {
+  if (coordinates.length < 2) return;
+  target.push(...coordinates);
+};
+
 const parseGpx = (text: string): ImportBundle => {
   const doc = parseXml(text);
   const nameAttr = doc.querySelector("trk > name, rte > name, metadata > name")?.textContent ?? undefined;
@@ -66,12 +78,11 @@ const parseKml = (text: string): ImportBundle => {
   const doc = parseXml(text);
   const docName = doc.querySelector("Document > name, Folder > name")?.textContent ?? undefined;
   const waypoints: ImportBundle["waypoints"] = [];
-  let line: [number, number][] | undefined;
+  const line: [number, number][] = [];
 
   doc.querySelectorAll("Placemark").forEach((placemark, index) => {
     const name = placemark.querySelector("name")?.textContent?.trim() || `Stop ${index + 1}`;
     const point = placemark.querySelector("Point > coordinates")?.textContent?.trim();
-    const lineString = placemark.querySelector("LineString > coordinates")?.textContent?.trim();
 
     if (point) {
       const [lon, lat] = point.split(",").map(Number);
@@ -80,24 +91,17 @@ const parseKml = (text: string): ImportBundle => {
       }
     }
 
-    if (lineString && !line) {
-      const coords = lineString
-        .split(/\s+/)
-        .map((triple) => triple.split(",").map(Number))
-        .filter((coord) => isFiniteCoord(coord[0], coord[1]))
-        .map((coord) => [coord[0]!, coord[1]!] as [number, number]);
-      if (coords.length >= 2) {
-        line = coords;
-      }
-    }
+    placemark.querySelectorAll("LineString > coordinates").forEach((node) => {
+      appendLine(line, parseCoordinateText(node.textContent?.trim() ?? ""));
+    });
   });
 
-  if (waypoints.length === 0 && line && line.length >= 2) {
+  if (waypoints.length === 0 && line.length >= 2) {
     waypoints.push({ name: "Start", coordinates: line[0]! });
     waypoints.push({ name: "End", coordinates: line[line.length - 1]! });
   }
 
-  return { groupName: docName?.trim() || undefined, waypoints, line };
+  return { groupName: docName?.trim() || undefined, waypoints, line: line.length >= 2 ? line : undefined };
 };
 
 const parseGeoJson = (text: string): ImportBundle => {
@@ -116,7 +120,7 @@ const parseGeoJson = (text: string): ImportBundle => {
   }
 
   const waypoints: ImportBundle["waypoints"] = [];
-  let line: [number, number][] | undefined;
+  const line: [number, number][] = [];
   let groupName: string | undefined;
 
   features.forEach((feature, index) => {
@@ -129,33 +133,90 @@ const parseGeoJson = (text: string): ImportBundle => {
       if (isFiniteCoord(lon, lat)) {
         waypoints.push({ name, coordinates: [lon!, lat!] });
       }
-    } else if (geometry.type === "LineString" && !line) {
+    } else if (geometry.type === "LineString") {
       const coords = (geometry.coordinates as number[][])
         .filter((coord) => isFiniteCoord(coord[0], coord[1]))
         .map((coord) => [coord[0]!, coord[1]!] as [number, number]);
       if (coords.length >= 2) {
-        line = coords;
+        appendLine(line, coords);
         groupName = groupName ?? (feature.properties as { name?: string } | null)?.name;
       }
+    } else if (geometry.type === "MultiLineString") {
+      (geometry.coordinates as number[][][]).forEach((segment) => {
+        appendLine(
+          line,
+          segment
+            .filter((coord) => isFiniteCoord(coord[0], coord[1]))
+            .map((coord) => [coord[0]!, coord[1]!] as [number, number])
+        );
+      });
+      groupName = groupName ?? (feature.properties as { name?: string } | null)?.name;
     }
   });
 
-  if (waypoints.length === 0 && line && line.length >= 2) {
+  if (waypoints.length === 0 && line.length >= 2) {
     waypoints.push({ name: "Start", coordinates: line[0]! });
     waypoints.push({ name: "End", coordinates: line[line.length - 1]! });
   }
 
-  return { groupName: groupName?.trim() || undefined, waypoints, line };
+  return { groupName: groupName?.trim() || undefined, waypoints, line: line.length >= 2 ? line : undefined };
 };
 
-const parseCsv = (text: string): ImportBundle => {
-  const lines = text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  if (lines.length === 0) return { waypoints: [] };
+const parseDelimitedRows = (text: string, delimiter: "," | "\t") => {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = "";
+  let inQuotes = false;
 
-  const header = lines[0]!.split(",").map((cell) => cell.trim().toLowerCase());
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i]!;
+    const next = text[i + 1];
+
+    if (char === "\"") {
+      if (inQuotes && next === "\"") {
+        cell += "\"";
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (!inQuotes && char === delimiter) {
+      row.push(cell.trim());
+      cell = "";
+      continue;
+    }
+
+    if (!inQuotes && (char === "\n" || char === "\r")) {
+      if (char === "\r" && next === "\n") {
+        i += 1;
+      }
+      row.push(cell.trim());
+      if (row.some(Boolean)) {
+        rows.push(row);
+      }
+      row = [];
+      cell = "";
+      continue;
+    }
+
+    cell += char;
+  }
+
+  row.push(cell.trim());
+  if (row.some(Boolean)) {
+    rows.push(row);
+  }
+
+  return rows;
+};
+
+const parseCsv = (text: string, delimiter: "," | "\t"): ImportBundle => {
+  const rows = parseDelimitedRows(text, delimiter);
+  if (rows.length === 0) return { waypoints: [] };
+
+  const header = rows[0]!.map((cell) => cell.trim().toLowerCase());
   const hasHeader = header.some((cell) => ["lat", "lng", "lon", "longitude", "latitude", "name"].includes(cell));
   const startIndex = hasHeader ? 1 : 0;
 
@@ -167,8 +228,8 @@ const parseCsv = (text: string): ImportBundle => {
   const nameIdx = hasHeader ? findIndex(["name", "label", "title"]) : 2;
 
   const waypoints: ImportBundle["waypoints"] = [];
-  for (let i = startIndex; i < lines.length; i += 1) {
-    const cells = lines[i]!.split(",").map((cell) => cell.trim());
+  for (let i = startIndex; i < rows.length; i += 1) {
+    const cells = rows[i]!;
     const lat = Number(cells[latIdx === -1 ? 0 : latIdx]);
     const lng = Number(cells[lngIdx === -1 ? 1 : lngIdx]);
     if (!isFiniteCoord(lng, lat)) continue;
@@ -187,6 +248,7 @@ export const parseImportFile = async (file: File): Promise<ImportBundle> => {
   if (lowerName.endsWith(".gpx")) return parseGpx(text);
   if (lowerName.endsWith(".kml")) return parseKml(text);
   if (lowerName.endsWith(".geojson") || lowerName.endsWith(".json")) return parseGeoJson(text);
-  if (lowerName.endsWith(".csv") || lowerName.endsWith(".tsv")) return parseCsv(text);
+  if (lowerName.endsWith(".csv")) return parseCsv(text, ",");
+  if (lowerName.endsWith(".tsv")) return parseCsv(text, "\t");
   throw new Error(`Unsupported file type: ${file.name}`);
 };
